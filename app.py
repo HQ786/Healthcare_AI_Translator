@@ -7,22 +7,18 @@ import os
 import wave
 import io
 import pydub
+import speech_recognition as sr
 from pydub import AudioSegment
 import streamlit.components.v1 as components
 
 # Initialize Whisper model for AI-enhanced transcription
 whisper_model = whisper.load_model("base")
 
-# Initialize speech recognizer
-recognizer = sr.Recognizer()
-
 # Ensure session state for speech output
 if "speech_output" not in st.session_state:
     st.session_state.speech_output = None
 if "input_speech_output" not in st.session_state:
     st.session_state.input_speech_output = None
-if "audio_data" not in st.session_state:
-    st.session_state.audio_data = None
 
 def transcribe_speech(audio_data):
     """Convert speech input into text using AI-enhanced transcription."""
@@ -116,8 +112,9 @@ def main():
     
     components.html(html_code, height=200)  # Embedded HTML/JS for microphone access
 
-    # Handle the received audio data
-    if "audio_data" in st.session_state and st.session_state.audio_data:
+    recognizer = sr.Recognizer()  # Move recognizer initialization here
+
+    if 'audio_data' in st.session_state:
         st.session_state.audio_data = None
         with st.spinner('Processing audio...'):
             transcribed_text = transcribe_speech(st.session_state.audio_data)
