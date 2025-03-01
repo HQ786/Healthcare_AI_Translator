@@ -131,9 +131,10 @@ def main():
 
     # JavaScript sends audio data to Streamlit
     if 'audio_data' in st.session_state and st.session_state.audio_data is not None:
+        audio_data = st.session_state.audio_data
         st.session_state.audio_data = None
         with st.spinner('Processing audio...'):
-            transcribed_text = transcribe_speech(st.session_state.audio_data)
+            transcribed_text = transcribe_speech(audio_data)
             translated_text = translate_text(transcribed_text, target_language_code)
             st.session_state.speech_output = text_to_speech(translated_text, target_language_code)
             st.session_state.input_speech_output = text_to_speech(transcribed_text, input_language_code)
