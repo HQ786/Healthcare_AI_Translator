@@ -1,6 +1,9 @@
-streamlit>=1.17.0
-speechrecognition>=3.8.1
-deep-translator>=1.9.2
-gtts>=2.2.3
-whisper>=1.0.0
-torch>=1.13.1
+streamlit==1.40.2  # Web framework for UI  
+requests==2.32.3  # API requests  
+deep-translator==1.11.4  # Translation support  
+SpeechRecognition==3.10.1  # Speech recognition  
+gtts==2.5.4  # Text-to-speech conversion  
+openai-whisper==20240930  # Whisper AI for speech-to-text  
+torch==2.2.2  # Required for Whisper AI  
+torchaudio==2.2.2  # Audio processing for Whisper  
+torchvision==0.17.2  # Required for some torch-related dependencies  
