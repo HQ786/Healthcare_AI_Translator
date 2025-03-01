@@ -11,9 +11,6 @@ import io
 # Initialize Whisper model for AI-enhanced transcription
 whisper_model = whisper.load_model("base")
 
-# Initialize speech recognizer
-recognizer = sr.Recognizer()
-
 # Ensure session state for speech output
 if "speech_output" not in st.session_state:
     st.session_state.speech_output = None
@@ -101,10 +98,13 @@ def main():
         on_audio_received=None  # We'll process audio in the AudioTransformer
     )
 
+    # Initialize AudioTransformer outside the stream so it's available in the main function
+    audio_transformer = AudioTransformer()
+
     if st.button("Process Audio", key="process_audio"):
-        if AudioTransformer().audio_data:
+        if audio_transformer.audio_data:
             with st.spinner('Processing...'):
-                transcribed_text = transcribe_speech_from_audio(AudioTransformer().audio_data)
+                transcribed_text = transcribe_speech_from_audio(audio_transformer.audio_data)
                 translated_text = translate_text(transcribed_text, target_language_code)
                 st.session_state.speech_output = text_to_speech(translated_text, target_language_code)
                 st.session_state.input_speech_output = text_to_speech(transcribed_text, input_language_code)
