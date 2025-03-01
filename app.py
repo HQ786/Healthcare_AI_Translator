@@ -1,39 +1,42 @@
 import streamlit as st
-import base64
-import whisper
+import speech_recognition as sr
 from deep_translator import GoogleTranslator
 from gtts import gTTS
 import os
-import io
-import pydub
-import speech_recognition as sr
-from pydub import AudioSegment
-import streamlit.components.v1 as components
+import base64
+import whisper
 
 # Initialize Whisper model for AI-enhanced transcription
 whisper_model = whisper.load_model("base")
+
+# Initialize speech recognizer
+recognizer = sr.Recognizer()
 
 # Ensure session state for speech output
 if "speech_output" not in st.session_state:
     st.session_state.speech_output = None
 if "input_speech_output" not in st.session_state:
     st.session_state.input_speech_output = None
-if "audio_data" not in st.session_state:
-    st.session_state.audio_data = None
 
-def transcribe_speech(audio_data):
+def transcribe_speech():
     """Convert speech input into text using AI-enhanced transcription."""
+    with sr.Microphone() as source:
+        st.info("Speak now...")
+        recognizer.adjust_for_ambient_noise(source)
+        audio = recognizer.listen(source)
+    
     try:
-        audio = AudioSegment.from_wav(io.BytesIO(audio_data))
+        # Save audio temporarily for Whisper processing
         audio_path = "temp_audio.wav"
-        audio.export(audio_path, format="wav")
+        with open(audio_path, "wb") as f:
+            f.write(audio.get_wav_data())
         
         # Use Whisper for AI-enhanced transcription
         result = whisper_model.transcribe(audio_path)
         os.remove(audio_path)
-        return result["text"]
+        return result["text"], audio
     except Exception as e:
-        return f"Error: {str(e)}"
+        return f"Error: {str(e)}", None
 
 def translate_text(text, target_language):
     """Translate text using Google Translator."""
@@ -56,52 +59,6 @@ def text_to_speech(text, language):
     except Exception as e:
         st.error(f"Error generating speech: {str(e)}")
         return None
-
-# HTML/JS to access microphone and record audio
-html_code = """
-    <script>
-        let mediaRecorder;
-        let chunks = [];
-        
-        async function startRecording() {
-            const stream = await navigator.mediaDevices.getUserMedia({audio: true});
-            mediaRecorder = new MediaRecorder(stream);
-            mediaRecorder.start();
-            
-            chunks = [];
-            mediaRecorder.ondataavailable = (event) => {
-                chunks.push(event.data);
-            };
-            mediaRecorder.onstop = () => {
-                const audioBlob = new Blob(chunks, { 'type' : 'audio/wav' });
-                const audioUrl = URL.createObjectURL(audioBlob);
-                const reader = new FileReader();
-                reader.onloadend = function() {
-                    const audioBase64 = reader.result.split(',')[1];
-                    // Send the audio data to Streamlit using the parent.postMessage
-                    window.parent.postMessage({type: "audio", audioBase64: audioBase64}, "*");
-                };
-                reader.readAsDataURL(audioBlob);
-            };
-        }
-
-        function stopRecording() {
-            mediaRecorder.stop();
-        }
-
-        // Listen for messages from Streamlit
-        window.addEventListener("message", function(event) {
-            if (event.data.type === "audio") {
-                console.log("Received audio data");
-                // Trigger Streamlit to process the audio
-                window.parent.postMessage(event.data, "*");
-            }
-        });
-    </script>
-    
-    <button onclick="startRecording()">Start Recording</button>
-    <button onclick="stopRecording()">Stop Recording</button>
-"""
 
 def main():
     st.set_page_config(page_title="AI Voice Translator", page_icon="🎙️", layout="wide")
@@ -127,17 +84,13 @@ def main():
     input_language_code = list(language_mapping.keys())[list(language_mapping.values()).index(input_language)]
     target_language_code = list(language_mapping.keys())[list(language_mapping.values()).index(target_language)]
     
-    components.html(html_code, height=200)  # Embedded HTML/JS for microphone access
-
-    # JavaScript sends audio data to Streamlit
-    if 'audio_data' in st.session_state and st.session_state.audio_data is not None:
-        audio_data = st.session_state.audio_data
-        st.session_state.audio_data = None
-        with st.spinner('Processing audio...'):
-            transcribed_text = transcribe_speech(audio_data)
+    if st.button("Start Speaking", key="start_speaking"):
+        with st.spinner('Listening...'):
+            transcribed_text, input_audio = transcribe_speech()
             translated_text = translate_text(transcribed_text, target_language_code)
             st.session_state.speech_output = text_to_speech(translated_text, target_language_code)
             st.session_state.input_speech_output = text_to_speech(transcribed_text, input_language_code)
+            
             st.session_state.transcribed_text = transcribed_text
             st.session_state.translated_text = translated_text
     
