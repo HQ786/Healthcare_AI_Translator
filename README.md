@@ -1,4 +1,4 @@
-# Nao Medical AI Voice Translator
+# Medical AI Voice Translator
 
 An interactive **AI Voice Translator** web application that leverages **AI transcription (Whisper)**, **Google Translate**, and **Text-to-Speech (gTTS)** to provide real-time translations with voice support. Users can speak in one language, and the app will transcribe, translate, and output the translated text in the target language, along with an audio response.
 
