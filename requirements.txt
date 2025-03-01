@@ -4,11 +4,13 @@ deep-translator==1.11.4  # Translation support
 SpeechRecognition==3.10.1  # Speech recognition  
 gtts==2.5.4  # Text-to-speech conversion  
 openai-whisper==20240930  # Whisper AI for speech-to-text  
-torch==2.2.2  # Required for Whisper AI  
-torchaudio==2.2.2  # Audio processing for Whisper  
-torchvision==0.17.2  # Required for some torch-related dependencies  
-numpy<2
-pyaudio
-ffmpeg
-speechrecognition
 
+# Optimized PyTorch (CPU version to avoid CUDA issues)
+torch==2.2.2+cpu  
+torchaudio==2.2.2+cpu  
+torchvision==0.17.2+cpu  
+-f https://download.pytorch.org/whl/cpu/torch_stable.html  
+
+numpy<2  # Ensure compatibility  
+pyaudio  # Audio processing  
+ffmpeg  # Required for audio conversions  
