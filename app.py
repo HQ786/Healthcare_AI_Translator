@@ -74,6 +74,7 @@ html_code = """
                 const reader = new FileReader();
                 reader.onloadend = function() {
                     const audioBase64 = reader.result.split(',')[1];
+                    // Send the audio data to Streamlit using the parent.postMessage
                     window.parent.postMessage(audioBase64, "*");
                 };
                 reader.readAsDataURL(audioBlob);
@@ -114,6 +115,7 @@ def main():
 
     recognizer = sr.Recognizer()  # Move recognizer initialization here
 
+    # JavaScript sends audio data to Streamlit
     if 'audio_data' in st.session_state:
         st.session_state.audio_data = None
         with st.spinner('Processing audio...'):
