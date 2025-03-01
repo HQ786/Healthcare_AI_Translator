@@ -25,7 +25,7 @@ class AudioTransformer:
         self.audio_data = None
 
     def recv(self, frame):
-        # Process the incoming audio frame
+        """Capture the incoming audio frame."""
         self.audio_data = frame
         return frame
 
@@ -107,7 +107,7 @@ def main():
     # Start WebRTC stream for capturing audio
     webrtc_streamer(
         key="audio-input",
-        mode=WebRtcMode.SENDRECV,
+        mode=WebRtcMode.RECVONLY,  # Receiving audio only
         rtc_configuration=rtc_configuration,
         audio_transformer_factory=AudioTransformerFactory,
         video_transformer_factory=None  # Only need audio in this case
@@ -143,4 +143,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
