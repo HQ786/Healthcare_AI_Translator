@@ -18,6 +18,8 @@ if "speech_output" not in st.session_state:
     st.session_state.speech_output = None
 if "input_speech_output" not in st.session_state:
     st.session_state.input_speech_output = None
+if "audio_data" not in st.session_state:
+    st.session_state.audio_data = None
 
 def transcribe_speech(audio_data):
     """Convert speech input into text using AI-enhanced transcription."""
@@ -58,12 +60,15 @@ def text_to_speech(text, language):
 # HTML/JS to access microphone and record audio
 html_code = """
     <script>
+        let mediaRecorder;
+        let chunks = [];
+        
         async function startRecording() {
             const stream = await navigator.mediaDevices.getUserMedia({audio: true});
-            const mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder = new MediaRecorder(stream);
             mediaRecorder.start();
             
-            let chunks = [];
+            chunks = [];
             mediaRecorder.ondataavailable = (event) => {
                 chunks.push(event.data);
             };
@@ -78,8 +83,10 @@ html_code = """
                 };
                 reader.readAsDataURL(audioBlob);
             };
-            
-            setTimeout(() => mediaRecorder.stop(), 5000);  // Stop recording after 5 seconds
+        }
+
+        function stopRecording() {
+            mediaRecorder.stop();
         }
 
         // Listen for messages from Streamlit
@@ -93,6 +100,7 @@ html_code = """
     </script>
     
     <button onclick="startRecording()">Start Recording</button>
+    <button onclick="stopRecording()">Stop Recording</button>
 """
 
 def main():
@@ -122,7 +130,7 @@ def main():
     components.html(html_code, height=200)  # Embedded HTML/JS for microphone access
 
     # JavaScript sends audio data to Streamlit
-    if 'audio_data' in st.session_state:
+    if 'audio_data' in st.session_state and st.session_state.audio_data is not None:
         st.session_state.audio_data = None
         with st.spinner('Processing audio...'):
             transcribed_text = transcribe_speech(st.session_state.audio_data)
