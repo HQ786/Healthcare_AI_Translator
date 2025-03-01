@@ -9,6 +9,7 @@ import io
 import pydub
 import speech_recognition as sr
 from pydub import AudioSegment
+import streamlit.components.v1 as components  # Make sure this import is here!
 
 # Initialize Whisper model for AI-enhanced transcription
 whisper_model = whisper.load_model("base")
@@ -112,7 +113,7 @@ def main():
     input_language_code = list(language_mapping.keys())[list(language_mapping.values()).index(input_language)]
     target_language_code = list(language_mapping.keys())[list(language_mapping.values()).index(target_language)]
     
-    components.html(html_code, height=200)
+    components.html(html_code, height=200)  # Embedded HTML/JS for microphone access
 
     if 'audio_data' in st.session_state:
         st.session_state.audio_data = None
