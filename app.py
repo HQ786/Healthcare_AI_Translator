@@ -1,17 +1,17 @@
 import streamlit as st
-from streamlit_webrtc import webrtc_streamer, WebRtcMode, RTCConfiguration
-import speech_recognition as sr
-import whisper
-from deep_translator import GoogleTranslator
-from gtts import gTTS
 import os
 import base64
+from deep_translator import GoogleTranslator
+from gtts import gTTS
+import whisper
+from streamlit_webrtc import webrtc_streamer, WebRtcMode, RTCConfiguration
+import numpy as np
 
 # Initialize Whisper model for AI-enhanced transcription
 whisper_model = whisper.load_model("base")
 
-# Initialize speech recognizer
-recognizer = sr.Recognizer()
+# Initialize speech recognizer (but now using WebRTC for capturing audio)
+recognizer = None  # Not needed, as we're using WebRTC to capture audio
 
 # Ensure session state for speech output
 if "speech_output" not in st.session_state:
@@ -19,12 +19,29 @@ if "speech_output" not in st.session_state:
 if "input_speech_output" not in st.session_state:
     st.session_state.input_speech_output = None
 
-def transcribe_speech(audio):
-    """Convert speech input into text using AI-enhanced transcription."""
+# Define a class for handling audio from WebRTC
+class AudioTransformer:
+    def __init__(self):
+        self.audio_data = None
+
+    def recv(self, frame):
+        # Process the incoming audio frame
+        self.audio_data = frame
+        return frame
+
+# Factory to create the AudioTransformer
+class AudioTransformerFactory:
+    def __call__(self):
+        return AudioTransformer()
+
+# Function to transcribe speech using Whisper
+def transcribe_speech(audio_data):
+    """Convert audio data into text using AI-enhanced transcription."""
     try:
+        # Temporarily save the audio data for Whisper processing
         audio_path = "temp_audio.wav"
         with open(audio_path, "wb") as f:
-            f.write(audio)
+            f.write(audio_data)
         
         # Use Whisper for AI-enhanced transcription
         result = whisper_model.transcribe(audio_path)
@@ -33,6 +50,7 @@ def transcribe_speech(audio):
     except Exception as e:
         return f"Error: {str(e)}"
 
+# Function to translate text using Google Translator
 def translate_text(text, target_language):
     """Translate text using Google Translator."""
     try:
@@ -40,6 +58,7 @@ def translate_text(text, target_language):
     except Exception as e:
         return f"Error: {str(e)}"
 
+# Function to convert text to speech
 def text_to_speech(text, language):
     """Convert text to speech and return base64 encoded audio."""
     try:
@@ -55,10 +74,11 @@ def text_to_speech(text, language):
         st.error(f"Error generating speech: {str(e)}")
         return None
 
+# Main function to run the Streamlit app
 def main():
     st.set_page_config(page_title="AI Voice Translator", page_icon="🎙️", layout="wide")
     st.title("🎙️ Nao Medical AI Voice Translator")
-    
+
     language_mapping = {
         'en': 'English',
         'es': 'Spanish',
@@ -78,18 +98,26 @@ def main():
     
     input_language_code = list(language_mapping.keys())[list(language_mapping.values()).index(input_language)]
     target_language_code = list(language_mapping.keys())[list(language_mapping.values()).index(target_language)]
+
+    # Set up WebRTC stream for audio capture
+    rtc_configuration = RTCConfiguration({
+        "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
+    })
     
-    if st.button("Start Speaking", key="start_speaking"):
-        with st.spinner('Listening...'):
-            # Call webrtc_streamer to capture the audio from the user's microphone
-            audio_data = webrtc_streamer(
-                key="audio-input",
-                mode=WebRtcMode.SENDRECV,
-                rtc_configuration=RTCConfiguration({
-                    "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
-                })
-            ).audio
-            if audio_data:
+    # Start WebRTC stream for capturing audio
+    webrtc_streamer(
+        key="audio-input",
+        mode=WebRtcMode.SENDRECV,
+        rtc_configuration=rtc_configuration,
+        audio_transformer_factory=AudioTransformerFactory,
+        video_transformer_factory=None  # Only need audio in this case
+    )
+    
+    # Process audio data if available
+    if "audio_data" in st.session_state:
+        audio_data = st.session_state.audio_data
+        if audio_data:
+            with st.spinner("Processing audio..."):
                 transcribed_text = transcribe_speech(audio_data)
                 translated_text = translate_text(transcribed_text, target_language_code)
                 st.session_state.speech_output = text_to_speech(translated_text, target_language_code)
@@ -98,19 +126,21 @@ def main():
                 st.session_state.transcribed_text = transcribed_text
                 st.session_state.translated_text = translated_text
     
+    # Show the results
     st.subheader("Results")
     col1, col2 = st.columns(2)
     with col1:
         st.text_area("Original Transcription:", value=st.session_state.get("transcribed_text", ""), height=100, disabled=True)
         if st.session_state.input_speech_output:
-            if st.button("🔊 Speak", key="speak_original"):
+            if st.button("🔊 Speak Original", key="speak_original"):
                 st.markdown(f'<audio controls><source src="{st.session_state.input_speech_output}" type="audio/mp3"></audio>', unsafe_allow_html=True)
     
     with col2:
         st.text_area("Translated Text:", value=st.session_state.get("translated_text", ""), height=100, disabled=True)
         if st.session_state.speech_output:
-            if st.button("🔊 Speak", key="speak_translated"):
+            if st.button("🔊 Speak Translated", key="speak_translated"):
                 st.markdown(f'<audio controls><source src="{st.session_state.speech_output}" type="audio/mp3"></audio>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
+
