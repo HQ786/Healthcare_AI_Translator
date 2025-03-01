@@ -8,7 +8,5 @@ torch==2.2.2  # Required for Whisper AI
 torchaudio==2.2.2  # Audio processing for Whisper  
 torchvision==0.17.2  # Required for some torch-related dependencies  
 numpy<2  # Numerical computations
-sounddevice==0.4.5  # Audio input/output handling
-scipy==1.10.1  # Scientific computations
 pyaudio==0.2.13  # Audio I/O library required for SpeechRecognition
 portaudio==0.0.1  # PortAudio library for audio processing
