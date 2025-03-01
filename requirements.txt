@@ -8,4 +8,4 @@ torch==2.2.2  # Required for Whisper AI
 torchaudio==2.2.2  # Audio processing for Whisper  
 torchvision==0.17.2  # Required for some torch-related dependencies  
 numpy<2  
-fmpeg
+ffmpeg
