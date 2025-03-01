@@ -4,7 +4,6 @@ import whisper
 from deep_translator import GoogleTranslator
 from gtts import gTTS
 import os
-import wave
 import io
 import pydub
 import speech_recognition as sr
@@ -75,13 +74,22 @@ html_code = """
                 reader.onloadend = function() {
                     const audioBase64 = reader.result.split(',')[1];
                     // Send the audio data to Streamlit using the parent.postMessage
-                    window.parent.postMessage(audioBase64, "*");
+                    window.parent.postMessage({type: "audio", audioBase64: audioBase64}, "*");
                 };
                 reader.readAsDataURL(audioBlob);
             };
             
             setTimeout(() => mediaRecorder.stop(), 5000);  // Stop recording after 5 seconds
         }
+
+        // Listen for messages from Streamlit
+        window.addEventListener("message", function(event) {
+            if (event.data.type === "audio") {
+                console.log("Received audio data");
+                // Trigger Streamlit to process the audio
+                window.parent.postMessage(event.data, "*");
+            }
+        });
     </script>
     
     <button onclick="startRecording()">Start Recording</button>
@@ -112,8 +120,6 @@ def main():
     target_language_code = list(language_mapping.keys())[list(language_mapping.values()).index(target_language)]
     
     components.html(html_code, height=200)  # Embedded HTML/JS for microphone access
-
-    recognizer = sr.Recognizer()  # Move recognizer initialization here
 
     # JavaScript sends audio data to Streamlit
     if 'audio_data' in st.session_state:
