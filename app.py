@@ -1,16 +1,16 @@
 import streamlit as st
-import speech_recognition as sr
+import sounddevice as sd
+import numpy as np
+import torch
+import whisper
 from deep_translator import GoogleTranslator
 from gtts import gTTS
 import os
 import base64
-import whisper
+import scipy.io.wavfile as wav
 
 # Initialize Whisper model for AI-enhanced transcription
 whisper_model = whisper.load_model("base")
-
-# Initialize speech recognizer
-recognizer = sr.Recognizer()
 
 # Ensure session state for speech output
 if "speech_output" not in st.session_state:
@@ -18,20 +18,21 @@ if "speech_output" not in st.session_state:
 if "input_speech_output" not in st.session_state:
     st.session_state.input_speech_output = None
 
+def record_audio(duration=5, samplerate=44100):
+    """Record audio from microphone using sounddevice."""
+    st.info("Recording... Speak now.")
+    audio = sd.rec(int(duration * samplerate), samplerate=samplerate, channels=1, dtype=np.int16)
+    sd.wait()
+    return audio.flatten(), samplerate
+
 def transcribe_speech():
     """Convert speech input into text using AI-enhanced transcription."""
-    with sr.Microphone() as source:
-        st.info("Speak now...")
-        recognizer.adjust_for_ambient_noise(source)
-        audio = recognizer.listen(source)
+    audio, samplerate = record_audio()
     
     try:
-        # Save audio temporarily for Whisper processing
         audio_path = "temp_audio.wav"
-        with open(audio_path, "wb") as f:
-            f.write(audio.get_wav_data())
+        wav.write(audio_path, samplerate, audio)
         
-        # Use Whisper for AI-enhanced transcription
         result = whisper_model.transcribe(audio_path)
         os.remove(audio_path)
         return result["text"], audio
@@ -62,7 +63,7 @@ def text_to_speech(text, language):
 
 def main():
     st.set_page_config(page_title="AI Voice Translator", page_icon="🎙️", layout="wide")
-    st.title("🎙️ Nao Medical AI Voice Translator")
+    st.title("🎙️ AI Voice Translator")
     
     language_mapping = {
         'en': 'English',
